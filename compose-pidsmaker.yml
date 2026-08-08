@@ -1,0 +1,38 @@
+services:
+  pids:
+    build:
+      context: .
+    container_name: ${TRAINING_CONTAINER_NAME:-trusted-pids}
+    networks:
+      - shared_network
+    ports:
+      - "8000:8000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      DB_HOST: postgres
+      DOCKER_PORT: ${DOCKER_PORT:-5432}
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      HTTP_PROXY: ${HTTP_PROXY:-}
+      HTTPS_PROXY: ${HTTPS_PROXY:-}
+      ALL_PROXY: ${ALL_PROXY:-}
+      NO_PROXY: localhost,127.0.0.1,::1,postgres,host.docker.internal
+    volumes:
+      - ./:/home/pids
+      - ${ARTIFACTS_DIR:-./artifacts}:/home/artifacts
+      # - /path/to/raw/data:/data
+    stdin_open: true
+    tty: true
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+networks:
+  shared_network:
+    external:
+      name: shared_network

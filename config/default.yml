@@ -1,0 +1,244 @@
+transformation:
+  used_methods: none
+  synthetic_attack_naive:
+    num_attacks: 1
+    num_malicious_process: 5
+    num_unauthorized_file_access: 20
+    process_selection_method: random # TODO: try new methods
+
+featurization:
+  temporal_rw:
+    walk_length: 30
+    num_walks: 10
+    trw_workers: 8
+    time_weight: uniform
+    half_life: 1
+    window_size: 5
+    min_count: 1
+    use_skip_gram: True
+    wv_workers: 6
+    compute_loss: True
+    negative: 5
+    decline_rate: 30
+  doc2vec:
+    include_neighbors: False
+    alpha: 0.025
+  alacarte:
+    walk_length: 30
+    num_walks: 10
+    context_window_size: 5
+    min_count: 0
+    use_skip_gram: True
+    num_workers: 1
+    compute_loss: True
+    add_paths: False
+  word2vec:
+    alpha: 0.025
+    window_size: 5
+    min_count: 1
+    use_skip_gram: True
+    num_workers: 1
+    compute_loss: True
+    negative: 5
+    decline_rate: 30
+  fasttext:
+    min_count: 2
+    alpha: 0.01
+    window_size: 3
+    negative: 3
+    num_workers: 1
+    use_pretrained_fb_model: False
+  flash:
+    min_count: 1
+    workers: 15
+  trusted:
+    semantic_encoder: hashing
+    semantic_dim: 100
+    structural_dim: auto
+    use_structural_features: True
+    use_trust_score: True
+    trust_min: 0.1
+    trust_max: 0.95
+    unseen_trust: 0.1
+    occ_weight: 0.3
+    neighbor_weight: 0.3
+    behavior_weight: 0.4
+    degree_log_norm: True
+    histogram_l1_norm: True
+feat_inference:
+  to_remove: True
+
+training:
+  encoder:
+    graph_attention:
+      activation: relu
+      num_heads: 8
+      concat: True
+      flow: source_to_target
+      num_layers: 2
+    tgn:
+      tgn_memory_dim: 100
+      tgn_time_dim: 100
+      use_node_feats_in_gnn: True
+      use_memory: False
+      use_time_order_encoding: False
+      project_src_dst: True
+    sage:
+      activation: relu
+      num_layers: 2
+    gat:
+      activation: relu
+      num_heads: 8
+      concat: True
+      flow: source_to_target
+      num_layers: 2
+    trust_gat:
+      activation: relu
+      num_layers: 2
+      num_heads: 4
+      concat: True
+      trust_attention_bias: False
+      trust_beta: 0.0
+      trust_feature_index: -1
+    gin:
+      activation: relu
+      num_layers: 2
+    magic_gat:
+      num_layers: 3
+      num_heads: 4
+      negative_slope: 0.2
+      alpha_l: 3.0
+      activation: prelu
+    custom_mlp:
+      architecture_str: none
+    x_is_tuple: False
+  decoder:
+    predict_edge_type:
+      decoder: edge_mlp
+      use_triplet_types: False
+      edge_mlp:
+        architecture_str: linear(0.5) | relu
+        src_dst_projection_coef: 2
+    predict_node_type:
+      decoder: node_mlp
+      balanced_loss: False
+      node_mlp:
+        architecture_str: none
+    reconstruct_node_features:
+      loss: MSE
+      decoder: node_mlp
+      node_mlp:
+        architecture_str: none
+    reconstruct_node_embeddings:
+      loss: MSE
+      decoder: node_mlp
+      node_mlp:
+        architecture_str: none
+    reconstruct_edge_embeddings:
+      loss: MSE
+      decoder: edge_mlp
+      edge_mlp:
+        architecture_str: linear(0.5) | relu
+        src_dst_projection_coef: 1
+    predict_edge_contrastive:
+      decoder: inner_product
+      inner_product:
+        dropout: 0.0
+      edge_mlp:
+        architecture_str: linear(0.5) | relu
+        src_dst_projection_coef: 1
+
+    few_shot:
+      include_attacks_in_ssl_training: False
+      freeze_encoder: True
+      num_epochs_few_shot: 50
+      patience_few_shot: 5
+      lr_few_shot: 0.001
+      weight_decay_few_shot: 0.00001
+      decoder:
+        used_methods: detect_edge_few_shot
+        detect_edge_few_shot:
+          decoder: edge_mlp # node_mlp
+          node_mlp:
+            architecture_str: linear(1.0) | relu
+          edge_mlp:
+            architecture_str: linear(0.5) | relu
+            src_dst_projection_coef: 1
+
+evaluation:
+  node_evaluation:
+    threshold_method: max_val_loss
+    use_dst_node_loss: True
+    use_kmeans: True
+    kmeans_top_K: 30
+  node_tw_evaluation:
+    threshold_method: max_val_loss
+    use_dst_node_loss: True
+    use_kmeans: True
+    kmeans_top_K: 3
+  temporal_risk_evaluation:
+    threshold_method: max_val_loss
+    threshold_multiplier: 1.0
+    tail_percentile: 99.95
+    tail_blend_alpha: 0.25
+    top_k: 5
+    beta_1hop: 0.4
+    beta_2hop: 0.15
+    decay: 0.8
+    absent_decay: 0.9
+    alpha: 1.0
+    delta: 1.0
+    max_propagated_risk: 10.0
+    propagation_gate_percentile: 0.0
+    propagation_gate_floor: 1.0
+    propagation_trust_discount: 0.0
+    source_degree_normalization: False
+    receiver_degree_normalization: False
+    degree_norm_min: 1.0
+    state_include_propagated: True
+    state_persistence_percentile: 0.0
+    state_persistence_min_windows: 1
+    max_state_risk: 100.0
+    context_direct_decay: 0.0
+    context_direct_min_factor: 0.0
+    score_fusion_mode: standard
+    residual_weight: 0.0
+    residual_cap_ratio: 0.0
+    residual_min_cap: 0.0
+    adaptive_tail_fraction: 0.01
+    adaptive_min_tail_size: 30
+    adaptive_min_tail_overlap: 0.85
+    adaptive_max_tail_growth: 0.15
+    adaptive_max_residual_share: 0.25
+    use_trust_context: False
+    trust_min: 0.1
+    trust_max: 0.95
+    trust_occurrence_weight: 0.3
+    trust_neighbor_weight: 0.3
+    trust_behavior_weight: 0.4
+    min_trusted_behavior_count: 20
+    seen_node_trust: 0.85
+    path_prefix_count_weight: 0.25
+    trusted_score_discount: 0.0
+    trust_risk_source_types: file
+    untrusted_source_self_weight: 0.0
+    untrusted_subject_self_weight: 0.0
+    untrusted_source_neighbor_weight: 0.0
+    untrusted_source_twohop_weight: 0.0
+    max_trust_context_risk: 100.0
+    duplicate_burst_discount_enabled: False
+    duplicate_burst_key: type_path
+    duplicate_burst_node_types: subject,file
+    duplicate_burst_min_rank: 2
+    duplicate_burst_weight: 0.0
+    duplicate_burst_min_factor: 0.2
+    use_kmeans: True
+    kmeans_top_K: 30
+  queue_evaluation:
+    queue_threshold: 20
+    used_method: kairos_idf_queue
+    kairos_idf_queue:
+      include_test_set_in_IDF: True
+  edge_evaluation:
+    malicious_edge_selection: src_node
+    threshold_method: max_val_loss

@@ -1,0 +1,52 @@
+[build-system]
+requires = ["setuptools >= 61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "trusted-pids"
+version = "1.0.0"
+description = "TRUSTED provenance-based APT detection and evidence reconstruction"
+authors = [{name = "TRUSTED authors"}]
+readme = "README.md"
+requires-python = ">= 3.9"
+license = {file = "LICENSE"}
+dependencies = [
+    "gensim==4.3.1",
+    "igraph==0.11.5",
+    "matplotlib==3.8.4",
+    "networkx==2.8.7",
+    "nltk==3.8.1",
+    "numpy==1.26.4",
+    "pandas==2.2.2",
+    "psycopg2-binary>=2.9",
+    "pytz==2024.1",
+    "PyYAML>=6.0",
+    "scikit-learn==1.2.0",
+    "scipy==1.10.1",
+    "torch==1.13.1",
+    "torch-geometric==2.5.3",
+    "torch-scatter==2.1.1",
+    "tqdm>=4.65",
+    "wandb==0.24.1",
+    "yacs==0.1.8",
+]
+
+[project.urls]
+Repository = "https://github.com/venbird/TRUSTED"
+
+[tool.setuptools.packages.find]
+include = ["pidsmaker*"]
+
+[tool.ruff]
+line-length = 100
+indent-width = 4
+lint.select = ["W", "I001"]
+exclude = [
+    ".svg",
+    ".ipynb",
+    ".json",
+    ".csv"
+]
+lint.isort.known-first-party = ["pidsmaker"]
+lint.isort.known-third-party = ["wandb", "torch", "numpy"]
+lint.isort.section-order = ["future", "standard-library", "third-party", "first-party", "local-folder"]

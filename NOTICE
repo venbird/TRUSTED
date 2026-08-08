@@ -1,0 +1,9 @@
+TRUSTED
+
+This distribution contains code adapted from PIDSMaker, available at
+https://github.com/ubc-provenance/PIDSMaker and licensed under the Apache
+License, Version 2.0. The original Apache-2.0 license is retained in LICENSE.
+
+Only the common PIDSMaker pipeline components required by TRUSTED are included.
+Implementations of the other detection systems distributed with PIDSMaker are
+not part of this repository.

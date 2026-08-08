@@ -1,0 +1,138 @@
+_include_yml: default
+
+construction:
+  used_method: default
+  use_all_files: True
+  mimicry_edge_num: 0
+  time_window_size: 15.0
+  use_hashed_label: False
+  fuse_edge: True
+  node_label_features:
+    subject: type, path, cmd_line
+    file: type, path
+    netflow: type, remote_ip, remote_port
+  multi_dataset: none
+
+transformation:
+  used_methods: none
+
+featurization:
+  used_method: trusted
+  emb_dim: 128
+  epochs: 50
+  training_split: all
+  seed: 0
+  trusted:
+    semantic_encoder: hashing
+    semantic_dim: 100
+    structural_dim: auto
+    use_structural_features: True
+    use_trust_score: True
+    trust_min: 0.1
+    trust_max: 0.95
+    unseen_trust: 0.1
+    occ_weight: 0.3
+    neighbor_weight: 0.3
+    behavior_weight: 0.4
+    degree_log_norm: True
+    histogram_l1_norm: True
+
+feat_inference:
+  to_remove: True
+
+batching:
+  save_on_disk: False
+  node_features: node_emb,node_type
+  edge_features: edge_type
+  fix_buggy_graph_reindexer: False
+  global_batching:
+    used_method: none
+  intra_graph_batching:
+    used_methods: edges,tgn_last_neighbor
+    edges:
+      intra_graph_batch_size: 1024
+    tgn_last_neighbor:
+      tgn_neighbor_size: 20
+      tgn_neighbor_n_hop: 1
+      fix_buggy_orthrus_TGN: False
+      fix_tgn_neighbor_loader: False
+      directed: False
+      insert_neighbors_before: False
+  inter_graph_batching:
+    used_method: none
+
+training:
+  used_method: default
+  seed: 0
+  deterministic: False
+  num_epochs: 12
+  patience: 3
+  lr: 0.00001
+  weight_decay: 0.00001
+  node_hid_dim: 128
+  node_out_dim: 64
+  grad_accumulation: 1
+  encoder:
+    used_methods: tgn,graph_attention
+    dropout: 0.5
+    graph_attention:
+      activation: relu
+      num_heads: 8
+      concat: True
+      flow: source_to_target
+      num_layers: 2
+    tgn:
+      tgn_memory_dim: 100
+      tgn_time_dim: 100
+      use_node_feats_in_gnn: True
+      use_memory: False
+      use_time_order_encoding: False
+      project_src_dst: True
+  decoder:
+    used_methods: predict_edge_type
+    predict_edge_type:
+      decoder: edge_mlp
+      balanced_loss: True
+      use_triplet_types: False
+      edge_mlp:
+        architecture_str: linear(0.5) | relu
+        src_dst_projection_coef: 2
+    use_few_shot: False
+
+evaluation:
+  viz_malicious_nodes: False
+  ground_truth_version: orthrus
+  best_model_selection: best_adp
+  used_method: temporal_risk_evaluation
+  temporal_risk_evaluation:
+    score_fusion_mode: standard
+    residual_weight: 1.0
+    residual_cap_ratio: 0.35
+    residual_min_cap: 0.0
+    adaptive_tail_fraction: 0.01
+    adaptive_min_tail_size: 30
+    adaptive_min_tail_overlap: 0.85
+    adaptive_max_tail_growth: 0.20
+    adaptive_max_residual_share: 0.30
+    threshold_method: max_val_loss
+    threshold_multiplier: 1.0
+    top_k: 1
+    beta_1hop: 0.4
+    beta_2hop: 0.1
+    decay: 0.6
+    absent_decay: 0.9
+    alpha: 1.0
+    delta: 1.0
+    max_propagated_risk: 10.0
+    use_trust_context: True
+    trusted_score_discount: 0.7
+    trust_risk_source_types: file
+    untrusted_source_self_weight: 2.0
+    untrusted_subject_self_weight: 0.0
+    untrusted_source_neighbor_weight: 6.0
+    untrusted_source_twohop_weight: 1.0
+    max_trust_context_risk: 100.0
+    use_kmeans: False
+
+triage:
+  used_method: none

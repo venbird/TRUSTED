@@ -1,0 +1,12 @@
+_include_yml: trusted_encoder_none_direct
+
+training:
+  encoder:
+    used_methods: graph_attention
+    x_is_tuple: False
+    graph_attention:
+      activation: relu
+      num_heads: 4
+      concat: True
+      flow: source_to_target
+      num_layers: 2

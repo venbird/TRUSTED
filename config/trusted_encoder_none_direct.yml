@@ -1,0 +1,22 @@
+_include_yml: trusted_main
+
+training:
+  encoder:
+    used_methods: none
+    x_is_tuple: True
+
+batching:
+  intra_graph_batching:
+    used_methods: edges
+
+evaluation:
+  used_method: temporal_risk_evaluation
+  best_model_selection: best_adp
+  temporal_risk_evaluation:
+    score_fusion_mode: direct_anchor
+    use_trust_context: False
+    alpha: 0.0
+    delta: 0.0
+    beta_1hop: 0.0
+    beta_2hop: 0.0
+    threshold_method: max_val_loss

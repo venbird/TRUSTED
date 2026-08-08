@@ -1,0 +1,9 @@
+cff-version: 1.2.0
+message: "Please cite the associated NDSS paper when using this software."
+title: "TRUSTED"
+type: software
+authors:
+  - name: "TRUSTED authors"
+repository-code: "https://github.com/venbird/TRUSTED"
+license: Apache-2.0
+version: 1.0.0
