@@ -1,7 +1,0 @@
-_include_yml: trusted_encoder_none_direct
-
-featurization:
-  emb_dim: 127
-  trusted:
-    use_structural_features: True
-    use_trust_score: False
