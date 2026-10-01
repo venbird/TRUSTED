@@ -1,48 +1,28 @@
 # TRUSTED
 
-TRUSTED is a provenance-based APT detection and evidence-reconstruction method.
-It combines training-derived semantic, structural, and behavioral trust features
-with temporal risk aggregation, then uses TrustTrace-v3 to reconstruct a compact,
-connected, time-consistent evidence graph from real audit events.
+Code for APT detection and attack tracing on provenance graphs.
 
-This repository contains only the code required by TRUSTED. It does not include
-other detection systems from PIDSMaker, trained models, raw datasets, Ground
-Truth, result tables, logs, or experiment artifacts.
+## Setup
 
-## Components
-
-- `pidsmaker/featurization/trusted_utils.py`: TRUSTED semantic, structural, and
-  trust feature construction.
-- `pidsmaker/detection/evaluation_methods/trusted_risk_evaluation.py`: temporal
-  direct-risk, propagation, state, and bounded trust-context aggregation.
-- `pidsmaker/triage/tracing_methods/trust_trace_v3.py`: evidence-only provenance
-  reconstruction. This module never reads Ground Truth.
-- `config/trusted_main.yml`: canonical paper configuration.
-- `config/trusted_*.yml`: TRUSTED-only ablation configurations.
-
-The `pidsmaker` package name is retained because TRUSTED reuses a minimal subset
-of the PIDSMaker pipeline. The method and all public configuration identifiers
-use the name TRUSTED.
-
-## Environment
-
-The reproducible environment is defined in `Dockerfile`. It uses Python 3.9,
-PyTorch 1.13.1 with CUDA 11.7, and PyTorch Geometric 2.5.3.
+Requires Docker Compose and NVIDIA Container Toolkit.
 
 ```bash
+git clone https://github.com/venbird/TRUSTED.git
+cd TRUSTED
 cp .env.example .env
+```
+
+Set data and output directories in `.env`, then start the containers:
+
+```bash
 docker network create shared_network 2>/dev/null || true
 docker compose -f compose-postgres.yml up -d
 docker compose -f compose-pidsmaker.yml up -d --build
 ```
 
-Dataset acquisition and PostgreSQL preparation are described in
-[`docs/data.md`](docs/data.md). Raw data and labels must be obtained from their
-original providers and are not redistributed here.
+Prepare the database and label files as described in [Data preparation](docs/data.md).
 
 ## Detection
-
-Run the canonical configuration inside the container:
 
 ```bash
 docker exec trusted-pids bash -lc \
@@ -50,52 +30,51 @@ docker exec trusted-pids bash -lc \
    --artifact_dir /home/artifacts --restart_from_scratch'
 ```
 
-`trusted_main` uses `tgn,graph_attention`, TRUSTED featurization,
-`temporal_risk_evaluation`, `best_adp`, `score_fusion_mode=standard`, and a
-validation-derived `max_val_loss` threshold.
+Replace `CADETS_E3` with the dataset name. Settings are in
+`config/trusted_main.yml`. Outputs are saved under `ARTIFACTS_DIR`.
 
-For evaluation from frozen edge losses:
+## Evaluation
+
+To evaluate saved edge losses:
 
 ```bash
 docker exec trusted-pids bash -lc \
   'cd /home/pids && PYTHONPATH=/home/pids \
    python scripts/run_trusted_evaluation.py \
    --model trusted_main --dataset CADETS_E3 \
-   --edge-loss-dir /home/artifacts/<edge-loss-run> \
-   --epoch <epoch> --run-name <name> \
-   --set evaluation.temporal_risk_evaluation.score_fusion_mode=standard \
-   --set evaluation.temporal_risk_evaluation.threshold_method=max_val_loss'
+   --edge-loss-dir "/home/artifacts/<edge-loss-run>" \
+   --epoch "<epoch>" --run-name "<name>"'
 ```
 
-## TrustTrace-v3
+The edge-loss root must contain `val/` and `test/` directories.
 
-List incidents from a frozen detector result:
+## Tracing
+
+List incidents:
 
 ```bash
-python pidsmaker/triage/tracing_methods/trust_trace_v3.py \
-  --result <result.pth> --edge-loss-dir <epoch-csv-directory> \
-  --list-incidents
+docker exec trusted-pids bash -lc \
+  'cd /home/pids && python pidsmaker/triage/tracing_methods/trust_trace_v3.py \
+   --result "<result.pth>" --edge-loss-dir "<epoch-csv-directory>" \
+   --list-incidents'
 ```
 
-Reconstruct one incident:
+Trace an incident:
 
 ```bash
-python pidsmaker/triage/tracing_methods/trust_trace_v3.py \
-  --result <result.pth> \
-  --graphs-dir <transformed-graph-root> \
-  --edge-loss-dir <epoch-csv-directory> \
-  --incident-id incident_0 \
-  --output-dir <new-output-directory>
+docker exec trusted-pids bash -lc \
+  'cd /home/pids && python pidsmaker/triage/tracing_methods/trust_trace_v3.py \
+   --result "<result.pth>" --graphs-dir "<transformed-graph-root>" \
+   --edge-loss-dir "<epoch-csv-directory>" --incident-id incident_0 \
+   --output-dir "<new-output-directory>"'
 ```
 
-TrustTrace-v3 refuses an existing output directory. Its manifest records source
-paths and SHA-256 hashes. Ground Truth must be used only for a separate posterior
-evaluation and never for incident formation, candidate ranking, or graph search.
+Replace `<...>` with paths and values from the same run and epoch. Paths must
+be accessible inside the container. Use an incident ID from the list above and
+a new output directory. If you changed `TRAINING_CONTAINER_NAME` in `.env`,
+replace `trusted-pids` in the commands.
 
-See [`docs/reproduction.md`](docs/reproduction.md) for the complete workflow and
-[`docs/method.md`](docs/method.md) for the implementation map.
+## License
 
-## License and attribution
-
-TRUSTED is released under Apache-2.0. The common pipeline code is adapted from
+Apache-2.0. Includes code adapted from
 [PIDSMaker](https://github.com/ubc-provenance/PIDSMaker); see `NOTICE`.
